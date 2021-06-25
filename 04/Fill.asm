@@ -11,6 +11,16 @@
 // "white" in every pixel;
 // the screen should remain fully clear as long as no key is pressed.
 
+(WHITEN)
+  @8192
+  D=A
+(LOOPWH)
+  D=D-1
+  @SCREEN
+  A=A+D
+  M=0
+  @LOOPWH
+  D;JNE
 (WHITE)
   @KBD
   D=M
@@ -36,16 +46,4 @@
   @LOOPBL
   D;JNE
   @BLACK
-  0;JMP
-(WHITEN)
-  @8192
-  D=A
-(LOOPWH)
-  D=D-1
-  @SCREEN
-  A=A+D
-  M=0
-  @LOOPWH
-  D;JNE
-  @WHITE
   0;JMP
