@@ -28,13 +28,6 @@
   D;JNE
   @WHITE
   0;JMP
-(BLACK)
-  @KBD
-  D=M
-  @WHITEN
-  D;JEQ
-  @BLACK
-  0;JMP
 (BLACKEN)
   @8192
   D=A
@@ -45,5 +38,11 @@
   M=-1
   @LOOPBL
   D;JNE
+(BLACK)
+  @KBD
+  D=M
+  @WHITEN
+  D;JEQ
   @BLACK
   0;JMP
+
