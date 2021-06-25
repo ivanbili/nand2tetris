@@ -17,8 +17,6 @@
   M=D
   @END
   D;JEQ
-  @SUBLOOP
-  D;JLT
 (ADDLOOP)
   @R0
   D=M
@@ -28,18 +26,6 @@
   M=M-1
   D=M
   @ADDLOOP
-  D;JNE
-  @END
-  0;JMP
-(SUBLOOP)
-  @R0
-  D=M
-  @R2
-  M=D-M
-  @i
-  M=M+1
-  D=M
-  @SUBLOOP
   D;JNE
 (END)
   @END
