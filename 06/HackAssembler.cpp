@@ -230,7 +230,7 @@ class Parser
          	  if (sym_table.getAddressFromName(stripped) == 0)
          	     return new ACommandVariable(stripped);
          	  else
-         	  	 return new ACommandImmediate(sym_table.getAddressFromName(stripped));
+                     return new ACommandImmediate(sym_table.getAddressFromName(stripped));
          	  }
          else
          	  {
@@ -258,16 +258,14 @@ int main (int argc, char* argv[])
    c.init();
    SymbolTable symTable;
    std::vector<Command*> instructions;
-   std::vector<std::string> source;
    unsigned int counter = 0;
    for(std::string line; getline( inputFile, line );)
    	   {
    	   Command * comm = p.createCommand(line, symTable, counter);
    	   if (comm)
-   	   	  {
-   	   	  counter++;
+   	      {
+   	      counter++;
    	      instructions.push_back(comm);
-   	      source.push_back(line);
    	      }
        }
    inputFile.close();
