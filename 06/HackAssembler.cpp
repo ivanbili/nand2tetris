@@ -237,7 +237,6 @@ int main(int argc, char* argv[])
    Code codegen;
    SymbolTable symTable;
    std::vector<Command*> instructions;
-   std::vector<std::string> source;
    unsigned int counter = 0;
    for(std::string line; getline( inputFile, line );)
        {
@@ -246,7 +245,6 @@ int main(int argc, char* argv[])
           {
           counter++;
           instructions.push_back(comm);
-          source.push_back(line);
           }
        }
    inputFile.close();
