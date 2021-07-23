@@ -4,18 +4,6 @@
 #include <iostream>
 #include <vector>
 
-std::string intToBinaryStr(int val, int bits)
-   {
-   std::string binStr;
-   while (bits!=0)
-      {
-      binStr = (val%2==0 ?"0":"1")+binStr;
-      val/=2;
-      bits--;
-      }
-   return binStr;
-   }
-
 class SymbolTable
    {
    private:
@@ -143,6 +131,17 @@ class Code
 class Command
    {
    public:
+   static std::string intToBinaryStr(int val, int bits)
+      {
+      std::string binStr;
+      while (bits!=0)
+         {
+         binStr = (val%2==0 ?"0":"1")+binStr;
+         val/=2;
+         bits--;
+         }
+      return binStr;
+      }
    virtual std::string getBinary(SymbolTable & st, Code & codegen) = 0;
    };
 
@@ -182,7 +181,7 @@ class CCommand : public Command
 class Parser
    {
    public:
-   Command * createCommand(std::string & line, SymbolTable & sym_table, unsigned int counter)
+   static Command * createCommand(std::string & line, SymbolTable & sym_table, unsigned int counter)
       {
       std::string stripped;
       bool comment = false;
@@ -235,15 +234,14 @@ class Parser
 int main(int argc, char* argv[])
    {
    std::ifstream inputFile(argv[1]);
-   Parser p;
-   Code c;
+   Code codegen;
    SymbolTable symTable;
    std::vector<Command*> instructions;
    std::vector<std::string> source;
    unsigned int counter = 0;
    for(std::string line; getline( inputFile, line );)
        {
-       Command * comm = p.createCommand(line, symTable, counter);
+       Command * comm = Parser::createCommand(line, symTable, counter);
        if (comm)
           {
           counter++;
@@ -255,7 +253,7 @@ int main(int argc, char* argv[])
    symTable.assignValues();
    std::ofstream outFile("out.hack");
    for (int i = 0; i < instructions.size(); i++)
-      outFile << instructions[i]->getBinary(symTable, c) << std::endl;
+      outFile << instructions[i]->getBinary(symTable, codegen) << std::endl;
    outFile.close();
    return 0;         
    }
