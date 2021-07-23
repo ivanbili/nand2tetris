@@ -212,10 +212,7 @@ class Parser
             }
          else if (sym_table.hasName(stripped))
             {
-            if (sym_table.getAddressFromName(stripped) == 0)
-               return new ACommandVariable(stripped);
-            else
-               return new ACommandImmediate(sym_table.getAddressFromName(stripped));
+            return new ACommandVariable(stripped);
             }
          else
             {
