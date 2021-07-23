@@ -5,16 +5,16 @@
 #include <vector>
 
 std::string intToBinaryStr(int val, int bits)
-{
-    std::string binStr;
-    while (bits!=0)
-       {
-       binStr = (val%2==0 ?"0":"1")+binStr;
-       val/=2;
-       bits--;
-       }
-    return binStr;
-}
+   {
+   std::string binStr;
+   while (bits!=0)
+      {
+      binStr = (val%2==0 ?"0":"1")+binStr;
+      val/=2;
+      bits--;
+      }
+   return binStr;
+   }
 
 class SymbolTable
    {
@@ -77,11 +77,9 @@ class SymbolTable
 class Code
    {
    private:
-   std::unordered_map<std::string, std::string> _jmp_to_binary;
-   std::unordered_map<std::string, std::string> _comp_to_binary;
-   std::unordered_map<std::string, std::string> _dest_to_binary;
+   std::unordered_map<std::string, std::string> _jmp_to_binary, _comp_to_binary, _dest_to_binary;
    public:
-   void init()
+   Code()
       {
       _comp_to_binary["0"]   = "0101010";
       _comp_to_binary["1"]   = "0111111";
@@ -131,46 +129,40 @@ class Code
    std::string getBinaryFromComp(std::string val)
       {
       return _comp_to_binary[val];
-      }	
+      } 
    std::string getBinaryFromDest(std::string val)
       {
       return _dest_to_binary[val];
-      }	
+      } 
    std::string getBinaryFromJmp(std::string val)
       {
       return _jmp_to_binary[val];
-      }	
+      } 
    };
 
 class Command
    {
    public:
-   virtual std::string getBinary(SymbolTable st, Code codegen) = 0;
+   virtual std::string getBinary(SymbolTable & st, Code & codegen) = 0;
    };
 
 class ACommandVariable : public Command
    {
    std::string _variable;
    public:
-   ACommandVariable(std::string var)
-      {
-   	  _variable = var;
-      }
-   std::string getBinary(SymbolTable st, Code codegen)
+   ACommandVariable(std::string var): _variable(var) {}
+   std::string getBinary(SymbolTable & st, Code & codegen)
       {
       return "0"+intToBinaryStr(st.getAddressFromName(_variable), 15);
       }
    };
 
-class ACommandImmediate : public  Command
+class ACommandImmediate : public Command
    {
    unsigned int _address_value;
    public:
-   ACommandImmediate(unsigned int val)
-   {
-   _address_value = val;
-   }
-   std::string getBinary(SymbolTable st, Code codegen)
+   ACommandImmediate(unsigned int val): _address_value(val) {}
+   std::string getBinary(SymbolTable & st, Code & codegen)
       {
       return "0"+intToBinaryStr(_address_value, 15);
       }
@@ -178,21 +170,14 @@ class ACommandImmediate : public  Command
 
 class CCommand : public Command
    {
-   std::string _dest;
-   std::string _comp;
-   std::string _jmp;
+   std::string _dest, _comp, _jmp;
    public:
-   CCommand(std::string dest, std::string comp, std::string jmp)
-      {
-      _dest = dest;
-      _comp = comp;
-      _jmp = jmp;
-      }
-   std::string getBinary(SymbolTable st, Code codegen)
-      {
-      return "111" + codegen.getBinaryFromComp(_comp) + codegen.getBinaryFromDest(_dest) + codegen.getBinaryFromJmp(_jmp);
-      }
-   };
+   CCommand(std::string dest, std::string comp, std::string jmp):_dest(dest), _comp(comp), _jmp(jmp) {}
+   std::string getBinary(SymbolTable & st, Code & codegen)
+     {
+     return "111" + codegen.getBinaryFromComp(_comp) + codegen.getBinaryFromDest(_dest) + codegen.getBinaryFromJmp(_jmp);
+     }
+  };
 
 class Parser
    {
@@ -202,71 +187,72 @@ class Parser
       std::string stripped;
       bool comment = false;
       for(std::string::size_type i = 0; i < line.size(); ++i)
-      	 {
-      	 if (line[i] == ' ' || line[i] == '\r' || line[i] == '\n')
-      	    continue;
-      	 int j = line[i];
-      	 stripped.push_back(line[i]);
+         {
+         if (line[i] == ' ' || line[i] == '\r' || line[i] == '\n')
+            continue;
+         int j = line[i];
+         stripped.push_back(line[i]);
          }
       for(std::string::size_type i = 0; i < stripped.size(); ++i)
-      	 {
-      	 if (stripped[i] == '/' && (i + 1 < stripped.size()) && stripped[i] == '/')
-      	 	  {
-      	 	  stripped.resize(i);
-      	    break;
-      	    }
+         {
+         if (stripped[i] == '/' && (i + 1 < stripped.size()) && stripped[i] == '/')
+            {
+            stripped.resize(i);
+            break;
+            }
          }
       if (stripped.size() == 0)
          return NULL;
       if (stripped[0] == '@')
          {
          stripped = stripped.substr(1,stripped.size());
-         if (stripped[0] >= '0' && stripped[0] <= '9')	
-         	  {
+         if (stripped[0] >= '0' && stripped[0] <= '9')  
+            {
             return new ACommandImmediate((unsigned int) std::stoi(stripped));
             }
          else if (sym_table.hasName(stripped))
-         	  {
-         	  if (sym_table.getAddressFromName(stripped) == 0)
-         	     return new ACommandVariable(stripped);
-         	  else
-                     return new ACommandImmediate(sym_table.getAddressFromName(stripped));
-         	  }
+            {
+            if (sym_table.getAddressFromName(stripped) == 0)
+               return new ACommandVariable(stripped);
+            else
+               return new ACommandImmediate(sym_table.getAddressFromName(stripped));
+            }
          else
-         	  {
-         	  sym_table.addName(stripped);
-         	  return new ACommandVariable(stripped);
-         	  }
+            {
+            sym_table.addName(stripped);
+            return new ACommandVariable(stripped);
+            }
          }
       std::size_t found_equals = stripped.find('=');
       std::size_t found_amp = stripped.find(';');
       if (found_equals != std::string::npos)
          return new CCommand(stripped.substr(0,found_equals), stripped.substr(found_equals+1,stripped.size()-found_equals+1), "null");
       else if (found_amp != std::string::npos)
-      	 return new CCommand("null", stripped.substr(0,found_amp), stripped.substr(found_amp+1,stripped.size()-found_amp+1));
+         return new CCommand("null", stripped.substr(0,found_amp), stripped.substr(found_amp+1,stripped.size()-found_amp+1));
       if (stripped[0] == '(')
-      	 sym_table.setAddressForName(stripped.substr(1,stripped.size()-2), counter);
+         sym_table.setAddressForName(stripped.substr(1,stripped.size()-2), counter);
       return NULL;
       }
    };
 
-int main (int argc, char* argv[])
+int main(int argc, char* argv[])
    {
    std::ifstream inputFile(argv[1]);
    Parser p;
    Code c;
-   c.init();
    SymbolTable symTable;
    std::vector<Command*> instructions;
+   std::vector<std::string> source;
    unsigned int counter = 0;
    for(std::string line; getline( inputFile, line );)
-   	   {
-   	   Command * comm = p.createCommand(line, symTable, counter);
-   	   if (comm)
-   	      {
-   	      counter++;
-   	      instructions.push_back(comm);
-   	      }
+       {
+       Command * comm = p.createCommand(line, symTable, counter);
+       if (comm)
+          {
+          counter++;
+          instructions.push_back(comm);
+          source.push_back(line);
+          }
        }
    inputFile.close();
    symTable.assignValues();
@@ -274,5 +260,5 @@ int main (int argc, char* argv[])
    for (int i = 0; i < instructions.size(); i++)
       outFile << instructions[i]->getBinary(symTable, c) << std::endl;
    outFile.close();
-	 return 0;         
+   return 0;         
    }
