@@ -1,0 +1,655 @@
+  @256
+  D=A
+  @SP
+  M=D
+  @LBL0.
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @LCL
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @ARG
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @THIS
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @THAT
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @SP
+  D=M
+  @5
+  D=D-A
+  @0
+  D=D-A
+  @ARG
+  M=D
+  @SP
+  D=M
+  @LCL
+  M=D
+  @Sys.init
+  0;JMP
+(LBL0.)
+// // This file is part of www.nand2tetris.org
+// // and the book "The Elements of Computing Systems"
+// // by Nisan and Schocken, MIT Press.
+// // File name: projects/08/FunctionCalls/StaticsTest/Class1.vm
+// 
+// // Stores two supplied arguments in static[0] and static[1].
+// function Class1.set 0
+(Class1.set)
+// push argument 0
+  @0
+  D=A
+  @ARG
+  A=D+M
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// pop static 0
+  @Class1.static0
+  D=A
+  @R13
+  M=D
+  @SP
+  M=M-1
+  A=M
+  D=M
+  @R13
+  A=M
+  M=D
+// push argument 1
+  @1
+  D=A
+  @ARG
+  A=D+M
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// pop static 1
+  @Class1.static1
+  D=A
+  @R13
+  M=D
+  @SP
+  M=M-1
+  A=M
+  D=M
+  @R13
+  A=M
+  M=D
+// push constant 0
+  @0
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// return
+  @LCL
+  D=M
+  @R13
+  M=D
+  @5
+  A=D-A
+  D=M
+  @R14
+  M=D
+  @SP
+  M=M-1
+  A=M
+  D=M
+  @ARG
+  A=M
+  M=D
+  @ARG
+  D=M+1
+  @SP
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @THAT
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @THIS
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @ARG
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @LCL
+  M=D
+  @R14
+  A=M
+  0;JMP
+// 
+// // Returns static[0] - static[1].
+// function Class1.get 0
+(Class1.get)
+// push static 0
+  @Class1.static0
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// push static 1
+  @Class1.static1
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// sub
+  @SP
+  M=M-1
+  A=M
+  D=M
+  A=A-1
+  D=M-D
+  M=D
+// return
+  @LCL
+  D=M
+  @R13
+  M=D
+  @5
+  A=D-A
+  D=M
+  @R14
+  M=D
+  @SP
+  M=M-1
+  A=M
+  D=M
+  @ARG
+  A=M
+  M=D
+  @ARG
+  D=M+1
+  @SP
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @THAT
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @THIS
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @ARG
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @LCL
+  M=D
+  @R14
+  A=M
+  0;JMP
+// // This file is part of www.nand2tetris.org
+// // and the book "The Elements of Computing Systems"
+// // by Nisan and Schocken, MIT Press.
+// // File name: projects/08/FunctionCalls/StaticsTest/Class2.vm
+// 
+// // Stores two supplied arguments in static[0] and static[1].
+// function Class2.set 0
+(Class2.set)
+// push argument 0
+  @0
+  D=A
+  @ARG
+  A=D+M
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// pop static 0
+  @Class2.static0
+  D=A
+  @R13
+  M=D
+  @SP
+  M=M-1
+  A=M
+  D=M
+  @R13
+  A=M
+  M=D
+// push argument 1
+  @1
+  D=A
+  @ARG
+  A=D+M
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// pop static 1
+  @Class2.static1
+  D=A
+  @R13
+  M=D
+  @SP
+  M=M-1
+  A=M
+  D=M
+  @R13
+  A=M
+  M=D
+// push constant 0
+  @0
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// return
+  @LCL
+  D=M
+  @R13
+  M=D
+  @5
+  A=D-A
+  D=M
+  @R14
+  M=D
+  @SP
+  M=M-1
+  A=M
+  D=M
+  @ARG
+  A=M
+  M=D
+  @ARG
+  D=M+1
+  @SP
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @THAT
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @THIS
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @ARG
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @LCL
+  M=D
+  @R14
+  A=M
+  0;JMP
+// 
+// // Returns static[0] - static[1].
+// function Class2.get 0
+(Class2.get)
+// push static 0
+  @Class2.static0
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// push static 1
+  @Class2.static1
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// sub
+  @SP
+  M=M-1
+  A=M
+  D=M
+  A=A-1
+  D=M-D
+  M=D
+// return
+  @LCL
+  D=M
+  @R13
+  M=D
+  @5
+  A=D-A
+  D=M
+  @R14
+  M=D
+  @SP
+  M=M-1
+  A=M
+  D=M
+  @ARG
+  A=M
+  M=D
+  @ARG
+  D=M+1
+  @SP
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @THAT
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @THIS
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @ARG
+  M=D
+  @R13
+  M=M-1
+  A=M
+  D=M
+  @LCL
+  M=D
+  @R14
+  A=M
+  0;JMP
+// // This file is part of www.nand2tetris.org
+// // and the book "The Elements of Computing Systems"
+// // by Nisan and Schocken, MIT Press.
+// // File name: projects/08/FunctionCalls/StaticsTest/Sys.vm
+// 
+// // Tests that different functions, stored in two different 
+// // class files, manipulate the static segment correctly. 
+// function Sys.init 0
+(Sys.init)
+// push constant 6
+  @6
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// push constant 8
+  @8
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// call Class1.set 2
+  @LBL0.Sys
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @LCL
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @ARG
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @THIS
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @THAT
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @SP
+  D=M
+  @5
+  D=D-A
+  @2
+  D=D-A
+  @ARG
+  M=D
+  @SP
+  D=M
+  @LCL
+  M=D
+  @Class1.set
+  0;JMP
+(LBL0.Sys)
+// pop temp 0 // Dumps the return value
+  @0
+  D=A
+  @SP
+  M=M-1
+  A=M
+  D=M
+  @R5
+  M=D
+// push constant 23
+  @23
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// push constant 15
+  @15
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+// call Class2.set 2
+  @LBL0.Sys
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @LCL
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @ARG
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @THIS
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @THAT
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @SP
+  D=M
+  @5
+  D=D-A
+  @2
+  D=D-A
+  @ARG
+  M=D
+  @SP
+  D=M
+  @LCL
+  M=D
+  @Class2.set
+  0;JMP
+(LBL0.Sys)
+// pop temp 0 // Dumps the return value
+  @0
+  D=A
+  @SP
+  M=M-1
+  A=M
+  D=M
+  @R5
+  M=D
+// call Class1.get 0
+  @LBL0.Sys
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @LCL
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @ARG
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @THIS
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @THAT
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @SP
+  D=M
+  @5
+  D=D-A
+  @0
+  D=D-A
+  @ARG
+  M=D
+  @SP
+  D=M
+  @LCL
+  M=D
+  @Class1.get
+  0;JMP
+(LBL0.Sys)
+// call Class2.get 0
+  @LBL0.Sys
+  D=A
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @LCL
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @ARG
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @THIS
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @THAT
+  D=M
+  @SP
+  M=M+1
+  A=M-1
+  M=D
+  @SP
+  D=M
+  @5
+  D=D-A
+  @0
+  D=D-A
+  @ARG
+  M=D
+  @SP
+  D=M
+  @LCL
+  M=D
+  @Class2.get
+  0;JMP
+(LBL0.Sys)
+// label WHILE
+(WHILE)
+// goto WHILE
+  @WHILE
+  0;JMP
