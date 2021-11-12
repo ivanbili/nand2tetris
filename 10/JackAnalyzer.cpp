@@ -1,66 +1,32 @@
+//g++ -std=c++17 JackAnalyzer.cpp
 #include <string>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
 #include <unordered_map>
 #include <assert.h>
-#include <stack>  
 
 enum TokenType {T_KEYWORD, T_SYMBOL, T_IDENTIFIER,  T_INT_CONST, T_STRING_CONST};
 enum KeywordType {K_CLASS, K_METHOD, K_FUNCTION, K_CONSTRUCTOR, K_INT, K_BOOLEAN, K_CHAR, K_VOID, K_VAR, K_STATIC, K_FIELD, K_LET, K_DO, K_IF, K_ELSE, K_WHILE, K_RETURN, K_TRUE, K_FALSE, K_NULL, K_THIS};
-
-class JackToken
-   {
-   public:
-   std::string _text;
-   TokenType _token_type;
-   KeywordType _keyword_type;
-   TokenType getTokenType()
-      {
-	   return _token_type;
-      }
-   KeywordType getKeyword()
-      {
-	   return _keyword_type;
-      }
-   char getSymbol()
-      {
-	   return _text[0]; 
-      }
-   std::string getIdentifier()
-      {
-	   return _text; 
-      }
-   int getIntVal()
-      {
-	   return std::stoi(_text);
-      }
-   std::string getStringVal()
-      {
-	    return _text;
-      }
-   };
-
 
 class JackTokenizer
    {
    private:
    std::ifstream _inputFile;
-   JackToken _currToken;
+   TokenType _curr_token_type;
+   std::string _curr_token_text;
+   KeywordType _curr_keyword_type;
    std::unordered_map<std::string, KeywordType> _str_to_keyword_map;
-
    bool isWhitespace(char c)
       {
       return c == ' ' || c == '\n' || c == '\r';
       }
-
    bool isSymbol(char c)
       {
       return c == '{' || c == '}' || c == '[' || c == ']' || c == '(' || c == ')' ||
              c == '.' || c == ',' || c == ';' || c == '+' || c == '-' || c == '*' ||
              c == '/' || c == '&' || c == '|' || c == '<' || c == '>' || c == '=' || c == '~';
       }
-   
    void skipWhitespace()
       {
       bool inside_comment = false;
@@ -83,8 +49,6 @@ class JackTokenizer
                _inputFile.get();
             break;
             }
-         //printf("byte1 %c, byte2 %c inside_comment %d\n", byte1, byte2, inside_comment);
-         
          if (inside_comment)
             {
             if (byte1 == '*' && byte2 == '/')
@@ -101,7 +65,7 @@ class JackTokenizer
             _inputFile.get();
             _inputFile.get();
             inside_comment = true;
-            multiline_comment = byte2 == '*';
+            multiline_comment = (byte2 == '*');
             }
          else if (byte1 == ' ' || byte1 == '\n' || byte1 == '\r' || byte1 == '\t')
             _inputFile.get();
@@ -136,10 +100,6 @@ class JackTokenizer
       if (hasMoreTokens())
          advance();
       }   
-   JackToken getCurrentToken()
-      {
-	   return _currToken;
-      }
    bool hasMoreTokens()
       {
 	   skipWhitespace();
@@ -154,9 +114,7 @@ class JackTokenizer
       TokenType token_type;
       KeywordType keyword_type;            
       char byte = _inputFile.get();
-      
       text.push_back(byte);
-      //printf("advance, token: %s\n", text.c_str());
       if (isSymbol(byte))
          token_type = T_SYMBOL;
       else
@@ -188,10 +146,21 @@ class JackTokenizer
             keyword_type = _str_to_keyword_map.find(text)->second;
             }
          }
-      //printf("advance end, token: %s\n", text.c_str());
-      _currToken._text = text;
-      _currToken._token_type = token_type;
-      _currToken._keyword_type = keyword_type;
+      _curr_token_type = token_type;
+      _curr_token_text = text;
+      _curr_keyword_type = keyword_type;
+      }    
+   std::string getCurrentTokenText()
+      {
+      return _curr_token_text;
+      }
+   TokenType getCurrentTokenType()
+      {
+      return _curr_token_type;
+      }      
+   KeywordType getCurrentKeywordType()
+      {
+      return _curr_keyword_type;
       }
    };
 
@@ -204,39 +173,46 @@ class CompilationEngine
    int _spaces;
    void eat(TokenType tt, std::string text)
       {
-      //printf("eat %s\n", text.c_str());
-      //printf("text %s\n", _tokenizer->getCurrentToken()._text.c_str());
-      if (_tokenizer->getCurrentToken().getTokenType() != tt)
+      if (_tokenizer->getCurrentTokenType() != tt)
          assert(false);
-      if (_tokenizer->getCurrentToken()._text != text)
+      if (_tokenizer->getCurrentTokenText() != text)
+         assert(false);
+      if (tt == T_KEYWORD)
+         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << text << " </keyword>" << std::endl;
+      else if (tt == T_SYMBOL)
+         {
+         if (text == "<")
+            text = "&lt;";
+         else if (text == ">")
+            text = "&gt;";
+         else if (text == "\"")
+            text = "&quot;";
+         else if (text == "&")
+            text = "&amp;";
+         _outputFile << std::string( _spaces, ' ' ) << "<symbol> " << text << " </symbol>" << std::endl;
+         }
+      else
          assert(false);
       _tokenizer->advance();
       }
-   
    public:
    CompilationEngine(JackTokenizer * t, std::string ofstr): _tokenizer(t), _outputFile(ofstr), _spaces(0) {}
    void compileClass()
       {
       _outputFile << std::string( _spaces, ' ' ) << "<class>" << std::endl;
       _spaces+=2;
-      //printf("curr token text is %s\n", _tokenizer->getCurrentToken()._text.c_str());
       eat(T_KEYWORD, "class");
-      _outputFile << std::string( _spaces, ' ' ) << "<keyword> class </keyword>" << std::endl;
-      
-      
-      TokenType tt = _tokenizer->getCurrentToken().getTokenType();
-      if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;
+      TokenType tt = _tokenizer->getCurrentTokenType();
+      if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;
       else
          assert(false);
       _tokenizer->advance();
       eat(T_SYMBOL, "{");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> { </symbol>" << std::endl;
-      
-      while (_tokenizer->getCurrentToken().getTokenType() == T_KEYWORD)
+      while (_tokenizer->getCurrentTokenType() == T_KEYWORD)
          {
-         if (_tokenizer->getCurrentToken()._text == "static" ||
-             _tokenizer->getCurrentToken()._text == "field")
+         if (_tokenizer->getCurrentTokenText() == "static" ||
+             _tokenizer->getCurrentTokenText() == "field")
             {
             compileClassVarDec();
             _tokenizer->advance();
@@ -244,66 +220,58 @@ class CompilationEngine
          else
             break;
          }
-      ////printf("done with fields...\n");         
-      while (_tokenizer->getCurrentToken().getTokenType() == T_KEYWORD)
+      while (_tokenizer->getCurrentTokenType() == T_KEYWORD)
          {
-         if (_tokenizer->getCurrentToken()._text == "constructor" ||
-             _tokenizer->getCurrentToken()._text == "function" ||
-             _tokenizer->getCurrentToken()._text == "method")
+         if (_tokenizer->getCurrentTokenText() == "constructor" ||
+             _tokenizer->getCurrentTokenText() == "function" ||
+             _tokenizer->getCurrentTokenText() == "method")
             {
             compileSubroutine();
-            //printf("after compileSubroutine token is... %s\n", _tokenizer->getCurrentToken()._text.c_str());
-            //_tokenizer->advance();
             }
          else
             break;
          }
       eat(T_SYMBOL, "}");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> } </symbol>" << std::endl;
-      
       while (_tokenizer->hasMoreTokens())
          {
          _tokenizer->advance();
          }         
-      
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</class>" << std::endl;
       }
    void compileClassVarDec()
       {
-      //printf("compileClassVarDec: curr token text is %s\n", _tokenizer->getCurrentToken()._text.c_str());
       _outputFile << std::string( _spaces, ' ' ) << "<classVarDec>" << std::endl;
       _spaces+=2;
-      if (_tokenizer->getCurrentToken().getTokenType() == T_KEYWORD &&
-          _tokenizer->getCurrentToken()._text == "static" ||
-          _tokenizer->getCurrentToken()._text == "field")
-         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentToken()._text << " </keyword>" << std::endl;
+      if (_tokenizer->getCurrentTokenType() == T_KEYWORD &&
+          _tokenizer->getCurrentTokenText() == "static" ||
+          _tokenizer->getCurrentTokenText() == "field")
+         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentTokenText() << " </keyword>" << std::endl;
       else
          assert(false);
       _tokenizer->advance();
-      if (_tokenizer->getCurrentToken().getTokenType() == T_KEYWORD &&
-          _tokenizer->getCurrentToken()._text == "int" ||
-          _tokenizer->getCurrentToken()._text == "boolean" ||
-          _tokenizer->getCurrentToken()._text == "char")
-         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentToken()._text << " </keyword>" << std::endl;
-      else if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;
+      if (_tokenizer->getCurrentTokenType() == T_KEYWORD &&
+          _tokenizer->getCurrentTokenText() == "int" ||
+          _tokenizer->getCurrentTokenText() == "boolean" ||
+          _tokenizer->getCurrentTokenText() == "char")
+         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentTokenText() << " </keyword>" << std::endl;
+      else if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;
       else
          assert(false);
       _tokenizer->advance();
       while (_tokenizer->hasMoreTokens())
          {
-         if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;
+         if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;
          else
             assert(false);
          _tokenizer->advance();
-         //printf("next token is... %s\n", _tokenizer->getCurrentToken()._text.c_str());
-         if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL)
+         if (_tokenizer->getCurrentTokenType() == T_SYMBOL)
             {
-            if (_tokenizer->getCurrentToken()._text == ";")
+            if (_tokenizer->getCurrentTokenText() == ";")
                break;
-            else if (_tokenizer->getCurrentToken()._text == ",")
+            else if (_tokenizer->getCurrentTokenText() == ",")
                _outputFile << std::string( _spaces, ' ' ) << "<symbol> , </symbol>" << std::endl;
             }
          else
@@ -318,36 +286,33 @@ class CompilationEngine
       {
       _outputFile << std::string( _spaces, ' ' ) << "<subroutineDec>" << std::endl;
       _spaces+=2;
-      //printf("subRoutineDec token is... %s\n", _tokenizer->getCurrentToken()._text.c_str());
-      if (_tokenizer->getCurrentToken().getTokenType() == T_KEYWORD &&
-          _tokenizer->getCurrentToken()._text == "constructor" ||
-          _tokenizer->getCurrentToken()._text == "function" ||
-          _tokenizer->getCurrentToken()._text == "method")
-         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentToken()._text << " </keyword>" << std::endl;
+      if (_tokenizer->getCurrentTokenType() == T_KEYWORD &&
+          _tokenizer->getCurrentTokenText() == "constructor" ||
+          _tokenizer->getCurrentTokenText() == "function" ||
+          _tokenizer->getCurrentTokenText() == "method")
+         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentTokenText() << " </keyword>" << std::endl;
       else
          assert(false);
       _tokenizer->advance();
-      if (_tokenizer->getCurrentToken().getTokenType() == T_KEYWORD &&
-          _tokenizer->getCurrentToken()._text == "void" ||
-          _tokenizer->getCurrentToken()._text == "int" ||
-          _tokenizer->getCurrentToken()._text == "boolean" ||
-          _tokenizer->getCurrentToken()._text == "char")
-         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentToken()._text << " </keyword>" << std::endl;
-      else if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;   
+      if (_tokenizer->getCurrentTokenType() == T_KEYWORD &&
+          _tokenizer->getCurrentTokenText() == "void" ||
+          _tokenizer->getCurrentTokenText() == "int" ||
+          _tokenizer->getCurrentTokenText() == "boolean" ||
+          _tokenizer->getCurrentTokenText() == "char")
+         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentTokenText() << " </keyword>" << std::endl;
+      else if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;   
       else      
          assert(false);      
       _tokenizer->advance();
-      if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;      
+      if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;      
       else
          assert(false);
       _tokenizer->advance();
       eat(T_SYMBOL, "(");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> ( </symbol>" << std::endl;
       compileParameterList();
       eat(T_SYMBOL, ")");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> ) </symbol>" << std::endl;
       compileSubroutineBody();
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</subroutineDec>" << std::endl;
@@ -355,51 +320,46 @@ class CompilationEngine
    void compileParameterList()
       {
       _outputFile << std::string( _spaces, ' ' ) << "<parameterList>" << std::endl;
-      //printf("compileParameterList token is... %s\n", _tokenizer->getCurrentToken()._text.c_str());
-      while (_tokenizer->hasMoreTokens() && _tokenizer->getCurrentToken().getTokenType() != T_SYMBOL)
+      while (_tokenizer->hasMoreTokens() && _tokenizer->getCurrentTokenType() != T_SYMBOL)
          {
-         if (_tokenizer->getCurrentToken().getTokenType() == T_KEYWORD &&
-             _tokenizer->getCurrentToken()._text == "void" ||
-             _tokenizer->getCurrentToken()._text == "int" ||
-             _tokenizer->getCurrentToken()._text == "boolean" ||
-             _tokenizer->getCurrentToken()._text == "char")
-            _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentToken()._text << " </keyword>" << std::endl;
-         else if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;
+         if (_tokenizer->getCurrentTokenType() == T_KEYWORD &&
+             _tokenizer->getCurrentTokenText() == "void" ||
+             _tokenizer->getCurrentTokenText() == "int" ||
+             _tokenizer->getCurrentTokenText() == "boolean" ||
+             _tokenizer->getCurrentTokenText() == "char")
+            _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentTokenText() << " </keyword>" << std::endl;
+         else if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;
          else
             assert(false);
          _tokenizer->advance();
-         if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;
+         if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;
          else
             assert(false);
          _tokenizer->advance();
-         if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL &&
-             _tokenizer->getCurrentToken()._text == ",")
+         if (_tokenizer->getCurrentTokenType() == T_SYMBOL &&
+             _tokenizer->getCurrentTokenText() == ",")
             _outputFile << std::string( _spaces, ' ' ) << "<symbol> , </symbol>" << std::endl;
          else
             break;
          _tokenizer->advance();
          }
-      //_tokenizer->advance();
       _outputFile << std::string( _spaces, ' ' ) << "</parameterList>" << std::endl;
       }
    void compileSubroutineBody()
       {
       _outputFile << std::string( _spaces, ' ' ) << "<subroutineBody>" << std::endl;
       _spaces+=2;
-      //printf("compileSubroutineBody token is... %s\n", _tokenizer->getCurrentToken()._text.c_str());
       eat(T_SYMBOL, "{");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> { </symbol>" << std::endl;      
       while (_tokenizer->hasMoreTokens() &&
-             _tokenizer->getCurrentToken().getTokenType() == T_KEYWORD &&
-             _tokenizer->getCurrentToken()._text == "var")
+             _tokenizer->getCurrentTokenType() == T_KEYWORD &&
+             _tokenizer->getCurrentTokenText() == "var")
          {
          compileVarDec();
          }
       compileStatements();
       eat(T_SYMBOL, "}");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> } </symbol>" << std::endl;
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</subroutineBody>" << std::endl;
       }
@@ -407,39 +367,36 @@ class CompilationEngine
       {
       _outputFile << std::string( _spaces, ' ' ) << "<varDec>" << std::endl;
       _spaces+=2;
-      //printf("compileVarDec token is... %s\n", _tokenizer->getCurrentToken()._text.c_str());
       eat(T_KEYWORD, "var");
-      _outputFile << std::string( _spaces, ' ' ) << "<keyword> var </keyword>" << std::endl;
-      while (_tokenizer->hasMoreTokens() && _tokenizer->getCurrentToken().getTokenType() != T_SYMBOL)
+      while (_tokenizer->hasMoreTokens() && _tokenizer->getCurrentTokenType() != T_SYMBOL)
          {
-         if (_tokenizer->getCurrentToken().getTokenType() == T_KEYWORD &&
-             _tokenizer->getCurrentToken()._text == "void" ||
-             _tokenizer->getCurrentToken()._text == "int" ||
-             _tokenizer->getCurrentToken()._text == "boolean" ||
-             _tokenizer->getCurrentToken()._text == "char")
-            _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentToken()._text << " </keyword>" << std::endl;
-         else if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;
+         if (_tokenizer->getCurrentTokenType() == T_KEYWORD &&
+             _tokenizer->getCurrentTokenText() == "void" ||
+             _tokenizer->getCurrentTokenText() == "int" ||
+             _tokenizer->getCurrentTokenText() == "boolean" ||
+             _tokenizer->getCurrentTokenText() == "char")
+            _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentTokenText() << " </keyword>" << std::endl;
+         else if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;
          else
             assert(false);
          _tokenizer->advance();
-         if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;
-         else if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL &&
-             _tokenizer->getCurrentToken()._text == ";")
+         if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;
+         else if (_tokenizer->getCurrentTokenType() == T_SYMBOL &&
+             _tokenizer->getCurrentTokenText() == ";")
              break;
          else
             assert(false);
          _tokenizer->advance();
-         if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL &&
-             _tokenizer->getCurrentToken()._text == ",")
+         if (_tokenizer->getCurrentTokenType() == T_SYMBOL &&
+             _tokenizer->getCurrentTokenText() == ",")
             _outputFile << std::string( _spaces, ' ' ) << "<symbol> , </symbol>" << std::endl;
          else
             break;
          _tokenizer->advance();
          }      
       eat(T_SYMBOL, ";");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> ; </symbol>" << std::endl;
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</varDec>" << std::endl;
       }
@@ -447,10 +404,9 @@ class CompilationEngine
       {
       _outputFile << std::string( _spaces, ' ' ) << "<statements>" << std::endl;
       _spaces+=2;
-      //printf("compileStatements token is... %s\n", _tokenizer->getCurrentToken()._text.c_str());
-      while (_tokenizer->hasMoreTokens() && _tokenizer->getCurrentToken().getTokenType() == T_KEYWORD)
+      while (_tokenizer->hasMoreTokens() && _tokenizer->getCurrentTokenType() == T_KEYWORD)
          {
-         switch(_tokenizer->getCurrentToken()._keyword_type)
+         switch(_tokenizer->getCurrentKeywordType())
             {
             case K_LET:
                compileLet();
@@ -468,7 +424,6 @@ class CompilationEngine
                compileWhile();
                break;
             }
-         //_tokenizer->advance();
          }
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</statements>" << std::endl;
@@ -478,27 +433,21 @@ class CompilationEngine
       _outputFile << std::string( _spaces, ' ' ) << "<letStatement>" << std::endl;
       _spaces+=2;
       eat(T_KEYWORD, "let");
-      _outputFile << std::string( _spaces, ' ' ) << "<keyword> let </keyword>" << std::endl;
-      if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;  
+      if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;  
       else
          assert(false);
       _tokenizer->advance();
-      if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL &&
-          _tokenizer->getCurrentToken()._text == "[")
+      if (_tokenizer->getCurrentTokenType() == T_SYMBOL &&
+          _tokenizer->getCurrentTokenText() == "[")
          {
          eat(T_SYMBOL, "[");
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> [ </symbol>" << std::endl;
          compileExpression();
          eat(T_SYMBOL, "]");
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> ] </symbol>" << std::endl;
          }
       eat(T_SYMBOL, "=");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> = </symbol>" << std::endl;
       compileExpression();
-      //printf("compileLet token is... %s\n", _tokenizer->getCurrentToken()._text.c_str());
       eat(T_SYMBOL, ";");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> ; </symbol>" << std::endl;
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</letStatement>" << std::endl;
       }
@@ -507,27 +456,20 @@ class CompilationEngine
       _outputFile << std::string( _spaces, ' ' ) << "<ifStatement>" << std::endl;
       _spaces+=2;
       eat(T_KEYWORD, "if");
-      _outputFile << std::string( _spaces, ' ' ) << "<keyword> if </keyword>" << std::endl;
       eat(T_SYMBOL, "(");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> ( </symbol>" << std::endl;      
       compileExpression();
       eat(T_SYMBOL, ")");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> ) </symbol>" << std::endl;
       eat(T_SYMBOL, "{");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> { </symbol>" << std::endl;      
       compileStatements();
       eat(T_SYMBOL, "}");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> } </symbol>" << std::endl;
-      if (_tokenizer->getCurrentToken().getTokenType() == T_KEYWORD &&
-         _tokenizer->getCurrentToken()._text == "else")
+      if (_tokenizer->getCurrentTokenType() == T_KEYWORD &&
+         _tokenizer->getCurrentTokenText() == "else")
          {
          _outputFile << std::string( _spaces, ' ' ) << "<keyword> else </keyword>" << std::endl;
          _tokenizer->advance();
          eat(T_SYMBOL, "{");
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> { </symbol>" << std::endl;      
          compileStatements();
          eat(T_SYMBOL, "}");   
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> } </symbol>" << std::endl;             
          }
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</ifStatement>" << std::endl;
@@ -537,17 +479,12 @@ class CompilationEngine
       _outputFile << std::string( _spaces, ' ' ) << "<whileStatement>" << std::endl;
       _spaces+=2;
       eat(T_KEYWORD, "while");
-      _outputFile << std::string( _spaces, ' ' ) << "<keyword> while </keyword>" << std::endl;
       eat(T_SYMBOL, "(");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> ( </symbol>" << std::endl;      
       compileExpression();
       eat(T_SYMBOL, ")");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> ) </symbol>" << std::endl;
       eat(T_SYMBOL, "{");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> { </symbol>" << std::endl;      
       compileStatements();
       eat(T_SYMBOL, "}");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> } </symbol>" << std::endl;
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</whileStatement>" << std::endl;      
       }
@@ -556,41 +493,34 @@ class CompilationEngine
       _outputFile << std::string( _spaces, ' ' ) << "<doStatement>" << std::endl;
       _spaces+=2;
       eat(T_KEYWORD, "do");
-      _outputFile << std::string( _spaces, ' ' ) << "<keyword> do </keyword>" << std::endl;
-      if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;  
+      if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;  
       else
          assert(false);
       _tokenizer->advance();
-      if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL && _tokenizer->getCurrentToken()._text == "(")
+      if (_tokenizer->getCurrentTokenType() == T_SYMBOL && _tokenizer->getCurrentTokenText() == "(")
          {
          _outputFile << std::string( _spaces, ' ' ) << "<symbol> ( </symbol>" << std::endl;
          _tokenizer->advance();
          compileExpressionList();
          eat(T_SYMBOL, ")");
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> ) </symbol>" << std::endl;
          }
-      else if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL && _tokenizer->getCurrentToken()._text == ".")
+      else if (_tokenizer->getCurrentTokenType() == T_SYMBOL && _tokenizer->getCurrentTokenText() == ".")
          {
          _outputFile << std::string( _spaces, ' ' ) << "<symbol> . </symbol>" << std::endl;
          _tokenizer->advance();
-         if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
-            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;  
+         if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
+            _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;  
          else
             assert(false);
          _tokenizer->advance();         
          eat(T_SYMBOL, "(");
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> ( </symbol>" << std::endl;
          compileExpressionList();
          eat(T_SYMBOL, ")");
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> ) </symbol>" << std::endl;
          }
       else
          assert(false);
-      
-      //compileExpression();
       eat(T_SYMBOL, ";");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> ; </symbol>" << std::endl;
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</doStatement>" << std::endl;      
       }
@@ -598,132 +528,104 @@ class CompilationEngine
       {
       _outputFile << std::string( _spaces, ' ' ) << "<returnStatement>" << std::endl;
       eat(T_KEYWORD, "return");
-      _outputFile << std::string( _spaces, ' ' ) << "<keyword> return </keyword>" << std::endl;
-      if (!(_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL &&
-          _tokenizer->getCurrentToken()._text == ";"))
+      if (!(_tokenizer->getCurrentTokenType() == T_SYMBOL &&
+          _tokenizer->getCurrentTokenText() == ";"))
          {
          compileExpression();
          }
       eat(T_SYMBOL, ";");
-      _outputFile << std::string( _spaces, ' ' ) << "<symbol> ; </symbol>" << std::endl;
       _outputFile << std::string( _spaces, ' ' ) << "</returnStatement>" << std::endl;
       }
    void compileExpression()
       {
-      //printf("compileExpression current token1 is %s\n", _tokenizer->getCurrentToken()._text.c_str());
-      if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER ||
-          _tokenizer->getCurrentToken().getTokenType() == T_KEYWORD ||
-          _tokenizer->getCurrentToken().getTokenType() == T_STRING_CONST ||
-          _tokenizer->getCurrentToken().getTokenType() == T_INT_CONST ||
-          ((_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL &&
-            _tokenizer->getCurrentToken()._text == "-" ||
-            _tokenizer->getCurrentToken()._text == "~" ||
-            _tokenizer->getCurrentToken()._text == "(")))
+      if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER ||
+          _tokenizer->getCurrentTokenType() == T_KEYWORD ||
+          _tokenizer->getCurrentTokenType() == T_STRING_CONST ||
+          _tokenizer->getCurrentTokenType() == T_INT_CONST ||
+          ((_tokenizer->getCurrentTokenType() == T_SYMBOL &&
+            _tokenizer->getCurrentTokenText() == "-" ||
+            _tokenizer->getCurrentTokenText() == "~" ||
+            _tokenizer->getCurrentTokenText() == "(")))
          {
          _outputFile << std::string( _spaces, ' ' ) << "<expression>" << std::endl;
          _spaces+=2;
          compileTerm();
-         //printf("current token2 is %s\n", _tokenizer->getCurrentToken()._text.c_str());
-         while (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL &&
-                _tokenizer->getCurrentToken()._text == "+" ||
-                _tokenizer->getCurrentToken()._text == "-" ||
-                _tokenizer->getCurrentToken()._text == "*" ||
-                _tokenizer->getCurrentToken()._text == "/" ||
-                _tokenizer->getCurrentToken()._text == "&" ||
-                _tokenizer->getCurrentToken()._text == "|" ||
-                _tokenizer->getCurrentToken()._text == "<" ||
-                _tokenizer->getCurrentToken()._text == ">" ||
-                _tokenizer->getCurrentToken()._text == "=")       
+         while (_tokenizer->getCurrentTokenType() == T_SYMBOL &&
+                _tokenizer->getCurrentTokenText() == "+" ||
+                _tokenizer->getCurrentTokenText() == "-" ||
+                _tokenizer->getCurrentTokenText() == "*" ||
+                _tokenizer->getCurrentTokenText() == "/" ||
+                _tokenizer->getCurrentTokenText() == "&" ||
+                _tokenizer->getCurrentTokenText() == "|" ||
+                _tokenizer->getCurrentTokenText() == "<" ||
+                _tokenizer->getCurrentTokenText() == ">" ||
+                _tokenizer->getCurrentTokenText() == "=")       
              {
-             //eat(T_SYMBOL, "+");
-             _outputFile << std::string( _spaces, ' ' ) << "<symbol> " << _tokenizer->getCurrentToken()._text << " </symbol>" << std::endl;
-             _tokenizer->advance();
+             eat(T_SYMBOL, _tokenizer->getCurrentTokenText());
              compileTerm();
-             //printf("current token3 is %s\n", _tokenizer->getCurrentToken()._text.c_str());
              }
          _spaces-=2;
          _outputFile << std::string( _spaces, ' ' ) << "</expression>" << std::endl;
          }
-         /*
-      else if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL &&
-               _tokenizer->getCurrentToken()._text == "-" || _tokenizer->getCurrentToken()._text == "~" ||
-               _tokenizer->getCurrentToken()._text == "(")
-         {
-         _outputFile << std::string( _spaces, ' ' ) << "<expression>" << std::endl;
-         _spaces+=2;
-         compileTerm();
-         _spaces-=2;
-         _outputFile << std::string( _spaces, ' ' ) << "</expression>" << std::endl;
-         }
-         */
-      
       }
    void compileTerm()
       {
       _outputFile << std::string( _spaces, ' ' ) << "<term>" << std::endl;
       _spaces+=2;
-      if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
+      if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
          {
-         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;
+         _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;
          _tokenizer->advance();
-         if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL && _tokenizer->getCurrentToken()._text == ".")
+         if (_tokenizer->getCurrentTokenType() == T_SYMBOL && _tokenizer->getCurrentTokenText() == ".") // subroutine call
             {
-            // subroutine call
             eat(T_SYMBOL, ".");
-            _outputFile << std::string( _spaces, ' ' ) << "<symbol> . </symbol>" << std::endl;
-            if (_tokenizer->getCurrentToken().getTokenType() == T_IDENTIFIER)
+            if (_tokenizer->getCurrentTokenType() == T_IDENTIFIER)
                {
-               _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentToken()._text << " </identifier>" << std::endl;
+               _outputFile << std::string( _spaces, ' ' ) << "<identifier> " << _tokenizer->getCurrentTokenText() << " </identifier>" << std::endl;
                _tokenizer->advance(); 
                }
             else
                assert(false);
             eat(T_SYMBOL, "(");
-            _outputFile << std::string( _spaces, ' ' ) << "<symbol> ( </symbol>" << std::endl;
             compileExpressionList();
             eat(T_SYMBOL, ")");
-            _outputFile << std::string( _spaces, ' ' ) << "<symbol> ) </symbol>" << std::endl;
             }
-         else if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL && _tokenizer->getCurrentToken()._text == "[")
+         else if (_tokenizer->getCurrentTokenType() == T_SYMBOL && _tokenizer->getCurrentTokenText() == "[")
             {
             _outputFile << std::string( _spaces, ' ' ) << "<symbol> [ </symbol>" << std::endl;
             _tokenizer->advance();
             compileExpression();
             eat(T_SYMBOL, "]");
-            _outputFile << std::string( _spaces, ' ' ) << "<symbol> ] </symbol>" << std::endl;
             }
          }
-      else if (_tokenizer->getCurrentToken().getTokenType() == T_KEYWORD)
+      else if (_tokenizer->getCurrentTokenType() == T_KEYWORD)
          {
-         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentToken()._text << " </keyword>" << std::endl;
+         _outputFile << std::string( _spaces, ' ' ) << "<keyword> " << _tokenizer->getCurrentTokenText() << " </keyword>" << std::endl;
          _tokenizer->advance();
          }
-      else if (_tokenizer->getCurrentToken().getTokenType() == T_STRING_CONST)
+      else if (_tokenizer->getCurrentTokenType() == T_STRING_CONST)
          {
-         _outputFile << std::string( _spaces, ' ' ) << "<stringConstant> " << _tokenizer->getCurrentToken()._text << " </stringConstant>" << std::endl;
+         _outputFile << std::string( _spaces, ' ' ) << "<stringConstant> " << _tokenizer->getCurrentTokenText() << " </stringConstant>" << std::endl;
          _tokenizer->advance();
          }
-      else if (_tokenizer->getCurrentToken().getTokenType() == T_INT_CONST)
+      else if (_tokenizer->getCurrentTokenType() == T_INT_CONST)
          {
-         _outputFile << std::string( _spaces, ' ' ) << "<integerConstant> " << _tokenizer->getCurrentToken()._text << " </integerConstant>" << std::endl;
+         _outputFile << std::string( _spaces, ' ' ) << "<integerConstant> " << _tokenizer->getCurrentTokenText() << " </integerConstant>" << std::endl;
          _tokenizer->advance();
          }
-      else if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL &&
-               _tokenizer->getCurrentToken()._text == "-" || _tokenizer->getCurrentToken()._text == "~")
+      else if (_tokenizer->getCurrentTokenType() == T_SYMBOL &&
+               _tokenizer->getCurrentTokenText() == "-" || _tokenizer->getCurrentTokenText() == "~")
          {
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> " << _tokenizer->getCurrentToken()._text << " </symbol>" << std::endl;
+         _outputFile << std::string( _spaces, ' ' ) << "<symbol> " << _tokenizer->getCurrentTokenText() << " </symbol>" << std::endl;
          _tokenizer->advance();
          compileTerm();
          }
-      else if (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL)
+      else if (_tokenizer->getCurrentTokenType() == T_SYMBOL)
          {
          eat(T_SYMBOL, "(");
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> ( </symbol>" << std::endl;
          compileExpression();
          eat(T_SYMBOL, ")");
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> ) </symbol>" << std::endl;
          }      
-
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</term>" << std::endl;      
       }
@@ -732,17 +634,15 @@ class CompilationEngine
       _outputFile << std::string( _spaces, ' ' ) << "<expressionList>" << std::endl;
       _spaces+=2;
       compileExpression();
-      while (_tokenizer->getCurrentToken().getTokenType() == T_SYMBOL && _tokenizer->getCurrentToken()._text == ",")
+      while (_tokenizer->getCurrentTokenType() == T_SYMBOL && _tokenizer->getCurrentTokenText() == ",")
          {
          eat(T_SYMBOL, ",");
-         _outputFile << std::string( _spaces, ' ' ) << "<symbol> , </symbol>" << std::endl;
          compileExpression();
          }
       _spaces-=2;
       _outputFile << std::string( _spaces, ' ' ) << "</expressionList>" << std::endl;
       }
    };
-
 
 void tokenizeAndCompileFile(std::string input_file_str, std::string output_file_str)
    {
